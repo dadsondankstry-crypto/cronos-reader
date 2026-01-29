@@ -1,0 +1,32 @@
+:root { --primary: #e50914; --bg: #0d0d0d; --card-bg: #1a1a1a; --text: #ffffff; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+body { background: var(--bg); color: var(--text); padding-top: 60px; overflow-x: hidden; }
+
+#progress-container { position: fixed; top: 0; width: 100%; height: 4px; z-index: 2000; }
+#progress-bar { width: 0%; height: 100%; background: var(--primary); transition: 0.2s; }
+
+#top-nav { position: fixed; top: 0; width: 100%; height: 60px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1000; border-bottom: 1px solid #222; }
+.nav-btn { background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; }
+#manga-title { color: var(--primary); font-weight: bold; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; }
+
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; }
+.modal-content { background: #1a1a1a; padding: 25px; border-radius: 15px; width: 85%; max-width: 400px; border: 1px solid var(--primary); }
+.switch-container { display: flex; justify-content: space-between; margin: 20px 0; }
+
+#search-container { padding: 15px; }
+#manga-search { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #222; color: white; outline: none; }
+
+.grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 12px; padding: 15px; }
+.manga-card { background: var(--card-bg); border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #333; }
+.manga-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; cursor: pointer; }
+.manga-card p { padding: 8px; font-size: 0.7rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.manga-item { padding: 15px; border-bottom: 1px solid #222; cursor: pointer; transition: 0.3s; }
+.manga-item:active { background: #333; }
+
+#viewer img { width: 100%; display: block; height: auto; }
+
+.reader-footer { padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; background: #000; }
+.next-chapter-btn { width: 100%; max-width: 300px; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; }
+.clear-btn { width: 100%; padding: 10px; background: none; border: 1px solid #f44; color: #f44; border-radius: 5px; margin-bottom: 10px; cursor: pointer; }
+.close-btn { width: 100%; padding: 10px; background: #333; border: none; color: white; border-radius: 5px; cursor: pointer; }

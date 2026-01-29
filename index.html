@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Cronos Reader</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" href="icons/icon-192.png">
+    <meta name="theme-color" content="#e50914">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="night-mode">
+
+<div id="progress-container"><div id="progress-bar"></div></div>
+
+<nav id="top-nav">
+    <button onclick="showLibrary()" class="nav-btn">🏠</button>
+    <span id="manga-title">Cronos</span>
+    <div class="nav-actions">
+        <button onclick="toggleSettings()" class="nav-btn">⚙️</button>
+    </div>
+</nav>
+
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <h3>Fontes de Busca</h3>
+        <hr>
+        <label class="switch-container"><span>Jikan (MAL)</span><input type="checkbox" id="use-jikan" checked></label>
+        <label class="switch-container"><span>Kitsu API</span><input type="checkbox" id="use-kitsu"></label>
+        <label class="switch-container"><span>MangaHost (Scraper)</span><input type="checkbox" id="use-scraper"></label>
+        <hr>
+        <button onclick="clearAppData()" class="clear-btn">🗑️ Limpar Tudo</button>
+        <button onclick="toggleSettings()" class="close-btn">Salvar e Fechar</button>
+    </div>
+</div>
+
+<div id="search-container">
+    <input type="text" id="manga-search" placeholder="🔍 Buscar mangá..." oninput="searchMangaDebounced(this.value)">
+</div>
+
+<main id="main-content">
+    <div id="library-view"></div>
+    <div id="online-results"></div>
+    <div id="viewer" style="display: none;"></div>
+</main>
+
+<script src="app.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+    }
+</script>
+</body>
+</html>
