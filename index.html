@@ -3,53 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Cronos Reader</title>
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <link rel="icon" href="icons/icon-192.png">
-    <meta name="theme-color" content="#e50914">
-    <link rel="stylesheet" href="style.css">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <title>Cronos Titan PWA</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        :root { --gold: #ffcc00; --bg: #000; --neon: #00ffcc; --img-br: 1; --img-sh: 1; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        
+        /* Nav e Header */
+        #header-container { position: fixed; top: 0; width: 100%; z-index: 1000; background: rgba(0,0,0,0.98); border-bottom: 2px solid var(--gold); padding-top: env(safe-area-inset-top); }
+        #nav { height: 65px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+        #read-progress { position: absolute; bottom: -2px; left: 0; height: 3px; background: var(--neon); width: 0%; transition: 0.1s; }
+        #dl-progress-bar { height: 4px; background: var(--gold); width: 0%; position: absolute; bottom: -2px; left: 0; transition: 0.3s; z-index: 1001; }
+
+        input[type="text"] { background: #121212; border: 1px solid #333; color: #fff; padding: 10px 15px; border-radius: 20px; width: 35%; outline: none; }
+        .btn-group { display: flex; gap: 5px; }
+        .btn-act { background: var(--gold); color: #000; font-size: 10px; font-weight: bold; padding: 8px 10px; border-radius: 5px; border: none; cursor: pointer; display: none; }
+        #off-btn { background: var(--neon); }
+
+        #shortcuts-bar { display: flex; gap: 8px; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; background: #050505; }
+        .q-link { background: #000; color: var(--neon); border: 1px solid var(--neon); padding: 5px 12px; border-radius: 15px; font-size: 10px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+
+        #viewer { margin-top: 130px; min-height: 100vh; }
+        .manga-img { width: 100%; display: block; opacity: 0; transition: opacity 0.5s; filter: brightness(var(--img-br)) contrast(var(--img-sh)); }
+        .manga-img.loaded { opacity: 1; }
+
+        /* Sidebar */
+        #sidebar { position: fixed; left: -300px; top: 0; width: 280px; height: 100%; background: #000; z-index: 2000; transition: 0.3s; border-right: 2px solid var(--gold); padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        #sidebar.open { left: 0; }
+        .control-group { margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px; }
+        label { display: block; color: var(--gold); font-size: 11px; margin-bottom: 8px; text-transform: uppercase; }
+        input[type="range"] { width: 100%; accent-color: var(--neon); }
+        .list-item { font-size: 11px; color: #aaa; padding: 12px; border-bottom: 1px solid #111; cursor: pointer; position: relative; }
+        .del-btn { color: red; float: right; font-weight: bold; }
+        
+        .nav-icon { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--gold); }
+        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; z-index: 1999; backdrop-filter: blur(2px); }
+        #fav-float { position: fixed; bottom: 20px; right: 20px; background: var(--gold); width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 24px; display: none; z-index: 999; }
+    </style>
 </head>
-<body class="night-mode">
+<body>
 
-<div id="progress-container"><div id="progress-bar"></div></div>
-
-<nav id="top-nav">
-    <button onclick="showLibrary()" class="nav-btn">🏠</button>
-    <span id="manga-title">Cronos</span>
-    <div class="nav-actions">
-        <button onclick="toggleSettings()" class="nav-btn">⚙️</button>
+<div id="header-container">
+    <div id="nav">
+        <button class="nav-icon" onclick="toggleSide()">☰</button>
+        <input type="text" id="urlIn" placeholder="Link..." onkeypress="if(event.key==='Enter') startEngine(this.value)">
+        <div class="btn-group">
+            <button id="off-btn" class="btn-act" onclick="saveOffline()">💾 SALVAR</button>
+            <button id="zip-btn" class="btn-act" onclick="downloadZip()">📥 ZIP</button>
+        </div>
+        <button class="nav-icon" onclick="location.reload()">🏠</button>
     </div>
-</nav>
-
-<div id="settings-modal" class="modal">
-    <div class="modal-content">
-        <h3>Fontes de Busca</h3>
-        <hr>
-        <label class="switch-container"><span>Jikan (MAL)</span><input type="checkbox" id="use-jikan" checked></label>
-        <label class="switch-container"><span>Kitsu API</span><input type="checkbox" id="use-kitsu"></label>
-        <label class="switch-container"><span>MangaHost (Scraper)</span><input type="checkbox" id="use-scraper"></label>
-        <hr>
-        <button onclick="clearAppData()" class="clear-btn">🗑️ Limpar Tudo</button>
-        <button onclick="toggleSettings()" class="close-btn">Salvar e Fechar</button>
+    <div id="shortcuts-bar">
+        <button class="q-link" onclick="startEngine('https://mugiwarasoficial.com/manga/manga-one-piece/capitulo-1166/')">MUGI 1166</button>
+        <button class="q-link" onclick="startEngine('https://mugiwarasoficial.com/manga/manga-one-piece/capitulo-1167/')">MUGI 1167</button>
     </div>
+    <div id="read-progress"></div>
+    <div id="dl-progress-bar"></div>
 </div>
 
-<div id="search-container">
-    <input type="text" id="manga-search" placeholder="🔍 Buscar mangá..." oninput="searchMangaDebounced(this.value)">
+<div id="overlay" onclick="toggleSide()"></div>
+<div id="sidebar">
+    <div class="control-group">
+        <label>💡 Brilho / 🚀 Auto-Scroll</label>
+        <input type="range" min="0.2" max="1.2" step="0.1" value="1" oninput="updateFilter('--img-br', this.value)">
+        <input type="range" min="0" max="10" step="1" value="0" oninput="toggleAutoScroll(this.value)">
+    </div>
+    <h3 style="color:var(--neon)">📂 Biblioteca Offline</h3>
+    <div id="offline-list"></div>
+    <h3 style="color:var(--gold)">⭐ Favoritos</h3>
+    <div id="fav-list"></div>
 </div>
 
-<main id="main-content">
-    <div id="library-view"></div>
-    <div id="online-results"></div>
-    <div id="viewer" style="display: none;"></div>
-</main>
+<div id="viewer">
+    <div style="padding:100px 20px; text-align:center; color:var(--gold);">CRONOS TITAN PWA</div>
+</div>
 
-<script src="app.js"></script>
+<button id="fav-float" onclick="toggleFav()">☆</button>
+
 <script>
+    // REGISTRO PWA
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+        navigator.serviceWorker.register('sw.js');
     }
+
+    const PROXY = "https://fragrant-unit-a421.dadsondankstry.workers.dev/?url=";
+    let imagesToDownload = [];
+    let currentUrl = "", currentTitle = "", scrollInt, db;
+
+    // Database Offline
+    const req = indexedDB.open("CronosDB", 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore("offline", { keyPath: "id" });
+    req.onsuccess = e => { db = e.target.result; renderOffline(); };
+
+    async function startEngine(url) {
+        const viewer = document.getElementById('viewer');
+        viewer.innerHTML = "<div style='padding:100px; text-align:center;'>CARREGANDO...</div>";
+        document.querySelectorAll('.btn-act').forEach(b => b.style.display = "none");
+        try {
+            const res = await fetch(PROXY + encodeURIComponent(url));
+            const html = await res.text();
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            currentTitle = doc.title.split('-')[0].trim();
+            currentUrl = url;
+            const imgs = doc.querySelectorAll('.entry-content img, .reading-content img, .wp-manga-chapter-img');
+            imagesToDownload = [...new Set(Array.from(imgs).map(i => i.getAttribute('data-lazy-src') || i.getAttribute('data-src') || i.getAttribute('src')).filter(s => s && s.includes('http') && !/logo|banner|adv/i.test(s)))];
+            viewer.innerHTML = "";
+            imagesToDownload.forEach(src => {
+                const img = new Image();
+                img.src = src; img.className = "manga-img";
+                img.onload = () => img.classList.add('loaded');
+                viewer.appendChild(img);
+            });
+            document.querySelectorAll('.btn-act').forEach(b => b.style.display = "block");
+            document.getElementById('fav-float').style.display = "block";
+            updateFavIcon(); window.scrollTo(0,0);
+        } catch (e) { viewer.innerHTML = "ERRO."; }
+    }
+
+    async function downloadZip() {
+        const btn = document.getElementById('zip-btn');
+        const bar = document.getElementById('dl-progress-bar');
+        btn.innerText = "..."; btn.disabled = true;
+        const zip = new JSZip();
+        for (let i = 0; i < imagesToDownload.length; i++) {
+            const r = await fetch(PROXY + encodeURIComponent(imagesToDownload[i]));
+            zip.file(`pag_${i+1}.jpg`, await r.blob());
+            bar.style.width = ((i+1)/imagesToDownload.length*100) + "%";
+        }
+        zip.generateAsync({type:"blob"}).then(c => {
+            saveAs(c, `${currentTitle}.zip`);
+            btn.innerText = "📥 ZIP"; btn.disabled = false;
+            setTimeout(() => bar.style.width = "0%", 2000);
+        });
+    }
+
+    async function saveOffline() {
+        const btn = document.getElementById('off-btn');
+        const bar = document.getElementById('dl-progress-bar');
+        btn.innerText = "...";
+        const data = { id: currentUrl, title: currentTitle, images: [] };
+        for (let i = 0; i < imagesToDownload.length; i++) {
+            const r = await fetch(PROXY + encodeURIComponent(imagesToDownload[i]));
+            const blob = await r.blob();
+            const b64 = await new Promise(res => {
+                const rd = new FileReader();
+                rd.onloadend = () => res(rd.result);
+                rd.readAsDataURL(blob);
+            });
+            data.images.push(b64);
+            bar.style.width = ((i+1)/imagesToDownload.length*100) + "%";
+        }
+        const tx = db.transaction("offline", "readwrite");
+        tx.objectStore("offline").put(data);
+        tx.oncomplete = () => {
+            btn.innerText = "✅"; renderOffline();
+            setTimeout(() => { bar.style.width = "0%"; btn.innerText = "💾 SALVAR"; }, 2000);
+        };
+    }
+
+    function renderOffline() {
+        const cont = document.getElementById('offline-list'); cont.innerHTML = "";
+        if(!db) return;
+        db.transaction("offline").objectStore("offline").getAll().onsuccess = e => {
+            e.target.result.forEach(ch => {
+                const d = document.createElement('div'); d.className = "list-item";
+                d.innerHTML = `<span onclick="loadOffline('${ch.id}')">${ch.title}</span><span class="del-btn" onclick="event.stopPropagation();delOff('${ch.id}')">✕</span>`;
+                cont.appendChild(d);
+            });
+        };
+    }
+
+    function loadOffline(id) {
+        db.transaction("offline").objectStore("offline").get(id).onsuccess = e => {
+            const ch = e.target.result;
+            const v = document.getElementById('viewer'); v.innerHTML = "";
+            ch.images.forEach(s => { const i = new Image(); i.src = s; i.className = "manga-img loaded"; v.appendChild(i); });
+            toggleSide(); window.scrollTo(0,0);
+        };
+    }
+
+    function delOff(id) { db.transaction("offline", "readwrite").objectStore("offline").delete(id).onsuccess = renderOffline; }
+    function toggleSide() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').style.display = document.getElementById('sidebar').classList.contains('open') ? 'block' : 'none'; }
+    function updateFilter(p, v) { document.documentElement.style.setProperty(p, v); }
+    function toggleAutoScroll(s) { clearInterval(scrollInt); if(s>0) scrollInt = setInterval(() => window.scrollBy(0,1), 110-(s*10)); }
+    function renderFavs() { const f = JSON.parse(localStorage.getItem('cronos_favs') || '[]'); document.getElementById('fav-list').innerHTML = f.map((x,i) => `<div class="list-item" onclick="startEngine('${x.url}');toggleSide()">${x.title} <span class="del-btn" onclick="event.stopPropagation();remFav(${i})">✕</span></div>`).join(''); }
+    function toggleFav() { let f = JSON.parse(localStorage.getItem('cronos_favs') || '[]'); const idx = f.findIndex(x => x.url === currentUrl); if(idx > -1) f.splice(idx,1); else f.push({title:currentTitle, url:currentUrl}); localStorage.setItem('cronos_favs', JSON.stringify(f)); updateFavIcon(); renderFavs(); }
+    function remFav(i) { let f = JSON.parse(localStorage.getItem('cronos_favs')); f.splice(i,1); localStorage.setItem('cronos_favs', JSON.stringify(f)); renderFavs(); updateFavIcon(); }
+    function updateFavIcon() { const f = JSON.parse(localStorage.getItem('cronos_favs') || '[]'); document.getElementById('fav-float').innerText = f.some(x => x.url === currentUrl) ? "★" : "☆"; }
+    window.onscroll = () => { document.getElementById("read-progress").style.width = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight) * 100) + "%"; };
+    document.addEventListener('DOMContentLoaded', renderFavs);
 </script>
 </body>
 </html>
